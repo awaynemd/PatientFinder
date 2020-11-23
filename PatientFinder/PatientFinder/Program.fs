@@ -26,6 +26,7 @@ open MedicalService
 *)
 
 
+
 module Name =
     (*I am trying to give an Id to each of the downloaded ViewName objects. Also, I want to read the database only once, despite having three 
       separate views of the same list of objects.*)
@@ -64,7 +65,7 @@ module Name =
     let init =
         let MakeNames =
             getAllAppointmentsForDate |> Array.map (fun q -> {NameId = Guid.NewGuid(); ViewName=q})
-        {Names = MakeNames; LastName  = ""; FirstName = ""; BirthDate =None}
+        {Names = MakeNames; LastName  = ""; FirstName = ""; BirthDate = None}
 
     let filteredSuggestions s =
         {s with Names = newFilter s}
@@ -80,19 +81,27 @@ module FinderLastName =
           IsOpen: bool
           Text: string
           SelectedItem: name option
+          Suggestions: names option
         }
 
     let init (n) = {
-       Visibility = Visibility.Collapsed  
-       IsOpen = true
-       Text = "Hi"
-       SelectedItem = None
+           Visibility = Visibility.Collapsed  
+           IsOpen = true
+           Text = "Hi"
+           SelectedItem = None
+           Suggestions = Some n
        }
 
     type Msg =
           | SetOpen of bool
           | SetText of string
           | SetSelectedItem of name option
+
+    let filteredSuggestions m =
+        match m.Suggestions with
+        | Some s -> s.Names |> Array.filter (fun n -> n.ViewName.lastname.ToLower().StartsWith(m.Text.ToLower()))
+        | None -> Array.empty 
+         
 
     let CloseAutoSuggestionBox m =
         { m with IsOpen = false; Visibility = Visibility.Collapsed}  
@@ -120,20 +129,22 @@ module FinderFirstName =
         { Visibility: System.Windows.Visibility
           IsOpen: bool
           Text: string
-          SelectedItem: ViewName option
+          SelectedItem: name option
+          Suggestions: names option
         }
 
     let init (n) = {
-       Visibility = Visibility.Collapsed  
-       IsOpen = true
-       Text = "Hi"
-       SelectedItem = None
+           Visibility = Visibility.Collapsed  
+           IsOpen = true
+           Text = "Hi"
+           SelectedItem = None
+           Suggestions = Some n
        }
 
     type Msg =
           | SetOpen of bool
           | SetText of string
-          | SetSelectedItem of ViewName option
+          | SetSelectedItem of name option
 
     let CloseAutoSuggestionBox m =
         { m with IsOpen = false; Visibility = Visibility.Collapsed}  
@@ -141,12 +152,17 @@ module FinderFirstName =
     let OpenAutoSuggestionBox m  =
          { m with  IsOpen = true; Visibility = Visibility.Visible } 
 
+    let filteredSuggestions m =
+        match m.Suggestions with
+        | Some s -> s.Names |> Array.filter (fun n -> n.ViewName.firstname.ToLower().StartsWith(m.Text.ToLower()))
+        | None -> Array.empty 
+
     
     let update msg m  =
         match msg with
         | SetOpen o -> { m with IsOpen = o }
         | SetText s -> { m with Text = s; IsOpen = true; Visibility = Visibility.Visible }
-        | SetSelectedItem i -> { m with SelectedItem = i; IsOpen = i.IsNone; Visibility = Visibility.Collapsed; Text = if i.IsSome then i.Value.firstname else "" }  
+        | SetSelectedItem i -> { m with SelectedItem = i; IsOpen = i.IsNone; Visibility = Visibility.Collapsed; Text = if i.IsSome then i.Value.ViewName.firstname else "" }  
 
     
     let bindings () = [
@@ -158,24 +174,27 @@ module FinderFirstName =
      ]
 
 module FinderBirthDate =
+
     type Model =
         { Visibility: System.Windows.Visibility
           IsOpen: bool
-          Text: DateTime option
-          SelectedItem: ViewName option
+          Text: string
+          SelectedItem: name option
+          Suggestions: names option
         }
 
     let init (n) = {
-       Visibility = Visibility.Collapsed  
-       IsOpen = true
-       Text = None
-       SelectedItem = None
+           Visibility = Visibility.Collapsed  
+           IsOpen = true
+           Text = ""
+           SelectedItem = None
+           Suggestions = Some n
        }
 
     type Msg =
           | SetOpen of bool
-          | SetText of DateTime option
-          | SetSelectedItem of ViewName option
+          | SetText of string
+          | SetSelectedItem of name option
 
     let CloseAutoSuggestionBox m =
         { m with IsOpen = false; Visibility = Visibility.Collapsed}  
@@ -183,13 +202,24 @@ module FinderBirthDate =
     let OpenAutoSuggestionBox m  =
          { m with  IsOpen = true; Visibility = Visibility.Visible } 
 
-(*No filter as yet on BirthDate as I do not know how to test for a valid birthdate from the user nor how to filter on it!*)
     
-    let update (ns,msg) m  =
+
+(*No filter as yet on BirthDate as I do not know how to test for a valid birthdate from the user nor how to filter on it!*)
+    let filteredSuggestions m =
+        match m.Suggestions with
+        | Some s -> s.Names |> Array.filter (fun n -> Some n.ViewName.birthdate.Date =                                                       
+                                                         match System.DateTime.TryParse(m.Text) with
+                                                            | true, r -> Some (r)
+                                                            | _ -> None
+                           )
+        | None -> Array.empty 
+
+    
+    let update msg m  =
         match msg with
         | SetOpen o -> { m with IsOpen = o }
         | SetText s -> { m with Text = s; IsOpen = true; Visibility = Visibility.Visible }
-        | SetSelectedItem i -> { m with SelectedItem = i; IsOpen = i.IsNone; Visibility = Visibility.Collapsed; Text = if i.IsSome then Some DateTime.Now else None }  
+        | SetSelectedItem i -> { m with SelectedItem = i; IsOpen = i.IsNone; Visibility = Visibility.Collapsed; Text = if i.IsSome then i.Value.ViewName.birthdate.ToShortDateString() else "" }  
 
     
     let bindings () = [
@@ -206,32 +236,29 @@ module App =
         { FinderBirthDate: FinderBirthDate.Model
           FinderLastName:  FinderLastName.Model 
           FinderFirstName: FinderFirstName.Model 
-          Suggestions: names }
+        }
     
     let init () =
         Name.init |> (fun q -> 
             { FinderBirthDate = FinderBirthDate.init (q)
               FinderLastName =  FinderLastName.init (q) 
               FinderFirstName = FinderFirstName.init(q)
-              Suggestions = q}
+            }
          )
-
-    let filteredSuggestions m =
-        Name.filteredSuggestions m.Suggestions
     
     type Msg =
-        | FinderBirthDateMsg of names * FinderBirthDate.Msg
-        | FinderLastNameMsg  of names * FinderLastName.Msg
-        | FinderFirstNameMsg of names * FinderFirstName.Msg
+        | FinderBirthDateMsg of FinderBirthDate.Msg
+        | FinderLastNameMsg  of FinderLastName.Msg
+        | FinderFirstNameMsg of FinderFirstName.Msg
 
     let update msg m =
         match msg with
-        | FinderBirthDateMsg (ns,msg) ->
-            { m with FinderBirthDate = FinderBirthDate.update (ns,msg) m.FinderBirthDate; Suggestions = filteredSuggestions m }
-        | FinderLastNameMsg (ns,msg) ->
-            { m with FinderLastName  = FinderLastName.update msg m.FinderLastName; Suggestions = filteredSuggestions m }
-        | FinderFirstNameMsg (ns,msg) ->
-            { m with FinderFirstName = FinderFirstName.update msg m.FinderFirstName; Suggestions = filteredSuggestions m } 
+        | FinderBirthDateMsg msg ->
+            { m with FinderBirthDate = FinderBirthDate.update msg m.FinderBirthDate}
+        | FinderLastNameMsg msg ->
+            { m with FinderLastName  = FinderLastName.update msg m.FinderLastName}
+        | FinderFirstNameMsg msg ->
+            { m with FinderFirstName = FinderFirstName.update msg m.FinderFirstName} 
 
 
     let bindings () : Binding<Model, Msg> list = [
