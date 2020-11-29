@@ -7,24 +7,16 @@ module FsNetwork =
 
     let context = new MedicalService.MedicalServiceClient()
 
-   
-    /// Get the office schedule for the tableDate.
-    let GetScheduleAsync (tableDate : DateTime) : Async<MedicalService.Visit[]> =
-        async {
-            let data = context.GetOfficeScheduleAsync(tableDate) 
-            return! Async.AwaitTask data               
-        }
-
 
     (*//to read database
-    let getAllAppointmentsForDate : ViewName[] = 
+    let getAllPatientName : ViewName[] = 
         Async.RunSynchronously (FsNetwork.GetAllPatientNamesAsync()) *)
 
     /// Get all the patient names from the patient file and appointment book with number of missed appointments and
     /// chart number if available.
     let GetAllPatientNamesAsync() =
         async {
-            let data = context.GetAllPatientNamesAsync() 
-            return! Async.AwaitTask data
-            }
+                let data = context.GetAllPatientNamesAsync() 
+                return! Async.AwaitTask data
+             }
        

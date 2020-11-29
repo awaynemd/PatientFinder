@@ -31,6 +31,7 @@
                              Background="Transparent"    
                              Foreground="Black" 
                              Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                             PreviewTextInput="BirthDate_PreviewTextInput"
                              >
                 </TextBox>
             </Border>
@@ -55,18 +56,18 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Width="80" Foreground="blue" Text="{Binding ViewName.lastname}" FontSize="12" />
+                                <TextBlock Width="80" Foreground="blue" Text="{Binding lastname}" FontSize="12" />
                                 <TextBlock Text=" " />
-                                <TextBlock Width="80" Foreground="Red" Text="{Binding ViewName.firstname}" FontSize="12" />
+                                <TextBlock Width="80" Foreground="Red" Text="{Binding firstname}" FontSize="12" />
                                 <TextBlock Text=" "/>
-                                <TextBlock Width="80" Foreground="Green" Text="{Binding ViewName.birthdate, StringFormat=d}" FontSize="12"/>
+                                <TextBlock Width="80" Foreground="Green" Text="{Binding birthdate, StringFormat=d}" FontSize="12"/>
                                 <TextBlock Text=" "/>
-                                <TextBlock Width="20" Background="LightPink" Text="{Binding ViewName.missed_appointments}" FontWeight="Bold" FontSize="12"/>
+                                <TextBlock Width="20" Background="LightPink" Text="{Binding missed_appointments}" FontWeight="Bold" FontSize="12"/>
                                 <TextBlock Text=" "/>
                                 <TextBlock x:Name="SeeStatus"  Width="60" Foreground="Red" Text="Do Not See" Visibility="Hidden" FontSize="12"/>
                             </StackPanel>
                             <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding ViewName.donotsee}" Value="True">
+                                <DataTrigger Binding="{Binding donotsee}" Value="True">
                                     <!--Setter's will remove any existing bindings on their target elements -->
                                     <Setter TargetName="SeeStatus" Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
